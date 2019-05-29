@@ -13,6 +13,8 @@ from openpyxl import Workbook
 
 urlList = []
 write_wb = Workbook()
+totalCount = 0
+urlSet = set([])
 
 def naver_aticle_list(query, count):
     pageCount = 1
@@ -24,7 +26,7 @@ def naver_aticle_list(query, count):
         searchUrl = "https://search.naver.com/search.naver?&where=news&query="+queryString+"&sm=tab_pge&sort=0&photo=0&field=0&reporter_article=&pd=0&ds=&de=&docid=&nso=so:r,p:all,a:all&mynews=0&start="+str(pageCount)+"&refresh_start=0"
         pageContainItemCount = get_aticle_url(searchUrl)
         pageCount += 10
-        if pageContainItemCount <= 0 or pageCount >= int(count):
+        if pageContainItemCount <= 0 or pageCount > int(count):
             break
 
     print("list total count : "+str(len(urlList)))
@@ -35,12 +37,14 @@ def get_aticle_url(url):
     soup = BeautifulSoup(rq.content, "html.parser", from_encoding="utf-8")
 
     contents = soup.find_all('a', class_='_sp_each_url')
-    print("contents count : "+str(len(contents)))
+    #print("contents count : "+str(len(contents)))
     for item in contents:
         if item.text == "네이버뉴스":
-            print("네이버뉴스 맞음!! : ")
-            print("href : "+str(item["href"]))
-            urlList.append(str(item["href"]))
+            print("네이버뉴스 맞음!! : "+", href : "+str(item["href"]))
+
+            #totalCount =+ 1
+            #urlList.append(str(item["href"]))
+            urlSet.add(str(item["href"]))
 
 
     return len(contents)
@@ -53,7 +57,7 @@ def get_data(url):
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
     }
 
-    print("url : "+str(url))
+    #print("url : "+str(url))
     html = session.get(url, headers=headers).content
 
     soup = BeautifulSoup(html, "html.parser", from_encoding="utf-8")
@@ -78,11 +82,11 @@ def get_data(url):
 
         contentsString = contentsString.replace('// flash 오류를 우회하기 위한 함수 추가', '')
         contentsString = contentsString.replace('function _flash_removeCallback() {}', '')
-        print("contentsString : " + contentsString)
+        #print("contentsString : " + contentsString)
 
         pressLogo = soup.find('div', class_='press_logo')
         pressName = pressLogo.find('img')['title']
-        print("title : " + title+", pressName : " + str(pressName))
+        print("title : " + title+", pressName : " + str(pressName)+", url : "+str(url))
 
         write_ws.append([dateString, title, pressName, contentsString, url])
     except Exception as error:
@@ -105,8 +109,15 @@ write_ws.append(["date", "title", "source", "contents", "link"])
 
 naver_aticle_list(query, count)
 
+print("urlSet count : "+ str(len(urlSet)))
+
+for urlItem in urlSet:
+    get_data(urlItem)
+
+'''
 for urlItem in urlList:
     get_data(urlItem)
+'''
 
 # 엑셀로 저장하기 위한 변수
 RESULT_PATH = 'D:/'  # 결과 저장할 경로
